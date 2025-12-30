@@ -1,0 +1,35 @@
+services:
+  tools-memory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tools-memory-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3100}:3100"
+    environment:
+      - PORT=3100
+      - HOST=0.0.0.0
+      - DB_PATH=/app/data/tools_memory.db
+      - MAX_RECORDS=${MAX_RECORDS:-1000}
+      - MAX_AGE_MINUTES=${MAX_AGE_MINUTES:-30}
+      - CLEANUP_INTERVAL_MS=${CLEANUP_INTERVAL_MS:-300000}
+    volumes:
+      # 持久化数据库文件
+      - tools-memory-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3100/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    networks:
+      - tools-memory-network
+
+volumes:
+  tools-memory-data:
+    driver: local
+
+networks:
+  tools-memory-network:
+    driver: bridge
